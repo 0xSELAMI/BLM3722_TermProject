@@ -1,5 +1,6 @@
 # Yazilim muh birinci el arac satis sistemi projesi
 ## Nasil calistiririm?
+```
 git clone ile clone at
 maven indir
 postgresql indir, servisi baslat.
@@ -9,3 +10,4 @@ cloneladigin proje klasorune git (pom xmlinin oldugu)
 mvn clean install
 mvn compile
 java -jar target/*.jar
+```
