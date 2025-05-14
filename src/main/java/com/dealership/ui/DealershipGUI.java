@@ -2,7 +2,7 @@ package com.dealership.ui;
 
 import com.dealership.model.*;
 import com.dealership.service.*;
-
+import java.util.LinkedHashMap;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -78,6 +78,7 @@ public class DealershipGUI extends JFrame {
     private JTable tblDetailedSalesReport;
     private DefaultTableModel detailedVehicleSalesReportTableModel;
     private JPanel pnlDetailedSalesPieChartContainer;
+    private JPanel pnlAnnualSalesChart;
 
     public DealershipGUI(StockService stockService, CustomerService customerService, OrderService orderService, TestDriveService testDriveService, QuoteService quoteService, ReportService reportService) {
         this.stockService = stockService;
@@ -568,7 +569,18 @@ public class DealershipGUI extends JFrame {
         pieChartTabPanel.add(btnRefreshPieChart, BorderLayout.NORTH);
         pieChartTabPanel.add(pnlSalesPieChart, BorderLayout.CENTER);
         reportTabs.addTab("Model Satış Grafiği", pieChartTabPanel);
-        JPanel detailedVehicleReportPanel = new JPanel(new BorderLayout(10, 10));
+        JPanel detailedVehicleReportPanel = new JPanel(new BorderLayout(40, 40));
+        JButton btnRefreshYearChart = new JButton("Yıllık Satış Grafiğini Yenile");
+        btnRefreshYearChart.addActionListener(e -> drawAnnualSalesChartAction());
+
+        JPanel yearTab = new JPanel(new BorderLayout(5,5));
+        yearTab.add(btnRefreshYearChart, BorderLayout.NORTH);
+
+        pnlAnnualSalesChart = new JPanel(new BorderLayout());
+        pnlAnnualSalesChart.setPreferredSize(new Dimension(400,300));
+        yearTab.add(pnlAnnualSalesChart, BorderLayout.CENTER);
+
+        reportTabs.addTab("Yıllık Satış Grafiği", yearTab);
         detailedVehicleSalesReportTableModel = new DefaultTableModel(
             new String[]{"Marka", "Model", "Yıl", "Paket", "Satılan Adet", "Satış Yüzdesi (%)"}, 0) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
@@ -766,5 +778,27 @@ public class DealershipGUI extends JFrame {
         } else if (model.getSize() > 0 && resetSelection) {
             comboBox.setSelectedIndex(0);
         }
+    }
+
+    private void drawAnnualSalesChartAction() {
+        Map<String, Double> salesByYear = orderService.getAllOrders().stream()
+                .filter(o -> o.getStatus() == OrderStatus.DELIVERED)
+                .collect(Collectors.groupingBy(
+                        o -> String.valueOf(o.getOrderDate().getYear()),
+                        LinkedHashMap::new,
+                        Collectors.summingDouble(Order::getTotalPrice)
+                ));
+        Map<String, Long> countsByYear = orderService.getAllOrders().stream()
+                .filter(o -> o.getStatus() == OrderStatus.DELIVERED)
+                .collect(Collectors.groupingBy(
+                        o -> String.valueOf(o.getOrderDate().getYear()),
+                        LinkedHashMap::new,
+                        Collectors.counting()
+                ));
+
+        pnlAnnualSalesChart.removeAll();
+        pnlAnnualSalesChart.add(new BarChartPanel(salesByYear, countsByYear), BorderLayout.CENTER);
+        pnlAnnualSalesChart.revalidate();
+        pnlAnnualSalesChart.repaint();
     }
 }
